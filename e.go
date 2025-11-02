@@ -21,10 +21,15 @@ func run_editor() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	print_message(25, 11, termbox.ColorDefault, termbox.ColorDefault, "Chris - Code Editor")
-	termbox.Flush()
-	termbox.PollEvent()
-	termbox.Close()
+	for {
+		print_message(25, 11, termbox.ColorDefault, termbox.ColorDefault, "Chris - Code Editor")
+		termbox.Flush()
+		event := termbox.PollEvent()
+		if event.Type == termbox.EventKey && event.Key == termbox.KeyEsc {
+			termbox.Close()
+			break
+		}
+	}
 }
 
 func main() {
