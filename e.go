@@ -13,8 +13,8 @@ import (
 
 var mode int
 var ROWS, COLS int
-var offsetX, offsetY int
-var currentRow, currentCol int
+var offset_row, offset_col int
+var current_row, current_col int
 var source_file string
 var text_buffer = [][]rune{}
 var undo_buffer = [][]rune{}
@@ -52,9 +52,9 @@ func read_file(filename string) {
 func display_text_buffer() {
 	var row, col int
 	for row = 0; row < ROWS; row++ {
-		text_bufferRow := row + offsetY
+		text_bufferRow := row + offset_col
 		for col = 0; col < COLS; col++ {
-			text_bufferCol := col + offsetY
+			text_bufferCol := col + offset_col
 			if text_bufferRow >= 0 && text_bufferRow < len(text_buffer) &&
 				text_bufferCol < len(text_buffer[text_bufferRow]) {
 				if text_buffer[text_bufferRow][text_bufferCol] != '\t' {
@@ -62,7 +62,7 @@ func display_text_buffer() {
 				} else {
 					termbox.SetCell(col, row, rune(' '), termbox.ColorDefault, termbox.ColorGreen)
 				}
-			} else if row+offsetY > len(text_buffer)-1 {
+			} else if row+offset_col > len(text_buffer)-1 {
 				termbox.SetCell(0, row, rune('*'), termbox.ColorBlue, termbox.ColorDefault)
 			}
 		}
@@ -91,7 +91,7 @@ func display_status_bar() {
 	} else {
 		file_status += " saved"
 	}
-	cursor_status = " Row " + strconv.Itoa(currentRow+1) + ", Col " + strconv.Itoa(currentCol+1) + " "
+	cursor_status = " Row " + strconv.Itoa(current_row+1) + ", Col " + strconv.Itoa(current_col+1) + " "
 	if len(copy_buffer) > 0 {
 		copy_status = " [Copy]"
 	}
