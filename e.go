@@ -4,16 +4,22 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
 
+var mode int
 var ROWS, COLS int
 var offsetX, offsetY int
+var currentRow, currentCol int
 var source_file string
-
 var text_buffer = [][]rune{}
+var undo_buffer = [][]rune{}
+var copy_buffer = []rune{}
+var modified bool
 
 func read_file(filename string) {
 	file, err := os.Open(filename)
@@ -33,14 +39,14 @@ func read_file(filename string) {
 		text_buffer = append(text_buffer, []rune{})
 
 		for i := 0; i < len(line); i++ {
-            text_buffer[lineNumber] = append(text_buffer[lineNumber], rune(line[i]))
+			text_buffer[lineNumber] = append(text_buffer[lineNumber], rune(line[i]))
 		}
-        lineNumber++
+		lineNumber++
 	}
-    if lineNumber == 0 {
-        text_buffer = append(text_buffer, []rune{})
-    }
-    
+	if lineNumber == 0 {
+		text_buffer = append(text_buffer, []rune{})
+	}
+
 }
 
 func display_text_buffer() {
@@ -64,6 +70,40 @@ func display_text_buffer() {
 	}
 }
 
+func display_status_bar() {
+	var mode_status string
+	var file_status string
+	var copy_status string
+	var undo_status string
+	var cursor_status string
+	if mode > 0 {
+		mode_status = " EDIT: "
+	} else {
+		mode_status = " VIEW: "
+	}
+	filename_length := len(source_file)
+	if filename_length > 8 {
+		filename_length = 8
+	}
+	file_status = source_file[:filename_length] + " - " + strconv.Itoa(len(text_buffer)) + " lines"
+	if modified {
+		file_status += " modified"
+	} else {
+		file_status += " saved"
+	}
+	cursor_status = " Row " + strconv.Itoa(currentRow+1) + ", Col " + strconv.Itoa(currentCol+1) + " "
+	if len(copy_buffer) > 0 {
+		copy_status = " [Copy]"
+	}
+	if len(undo_buffer) > 0 {
+		undo_status = " [Undo]"
+	}
+	used_space := len(mode_status) + len(file_status) + len(cursor_status) + len(copy_status) + len(undo_status)
+	spaces := strings.Repeat(" ", COLS-used_space)
+	message := mode_status + file_status + copy_status + undo_status + spaces + cursor_status
+	print_message(0, ROWS, termbox.ColorBlack, termbox.ColorWhite, message)
+}
+
 func print_message(col, row int, fg, bg termbox.Attribute, message string) {
 	for _, ch := range message {
 		termbox.SetCell(col, row, ch, fg, bg)
@@ -77,13 +117,13 @@ func run_editor() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-    if len(os.Args) > 1 {
-        source_file = os.Args[1]
-        read_file(source_file)
-    } else {
-        source_file = "out.txt"
-        text_buffer = append(text_buffer, []rune{})
-    }
+	if len(os.Args) > 1 {
+		source_file = os.Args[1]
+		read_file(source_file)
+	} else {
+		source_file = "out.txt"
+		text_buffer = append(text_buffer, []rune{})
+	}
 
 	for {
 		COLS, ROWS = termbox.Size()
@@ -93,7 +133,7 @@ func run_editor() {
 		}
 		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 		display_text_buffer()
-		//print_message(25, 11, termbox.ColorDefault, termbox.ColorDefault, "Chris - Code Editor")
+		display_status_bar()
 		termbox.Flush()
 		event := termbox.PollEvent()
 		if event.Type == termbox.EventKey && event.Key == termbox.KeyEsc {
