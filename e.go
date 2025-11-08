@@ -49,6 +49,22 @@ func read_file(filename string) {
 
 }
 
+func insert_rune(event termbox.Event) {
+	insert_rune := make([]rune, len(text_buffer[current_row])+1)
+	copy(insert_rune[:current_col], text_buffer[current_row][:current_col])
+	switch event.Key {
+	case termbox.KeySpace:
+		insert_rune[current_col] = rune(' ')
+	case termbox.KeyTab:
+		insert_rune[current_col] = rune(' ')
+	default:
+		insert_rune[current_col] = rune(event.Ch)
+	}
+	copy(insert_rune[current_col+1:], text_buffer[current_row][current_col:])
+	text_buffer[current_row] = insert_rune
+	current_col++
+}
+
 func scroll_text_buffer() {
 	if current_row < offset_row {
 		offset_row = current_row
@@ -140,12 +156,38 @@ func get_key() termbox.Event {
 func process_keypress() {
 	key_event := get_key()
 	if key_event.Key == termbox.KeyEsc {
-		termbox.Close()
-		os.Exit(0)
+		mode = 0
 	} else if key_event.Ch != 0 {
-		// handle chars
+		if mode == 1 {
+			insert_rune(key_event)
+			modified = true
+		} else {
+			switch key_event.Ch {
+			case 'q':
+				termbox.Close()
+				os.Exit(0)
+			case 'e':
+				mode = 1
+			}
+		}
 	} else {
 		switch key_event.Key {
+		case termbox.KeyTab:
+			{
+				if mode == 1 {
+					for i := 0; i < 4; i++ {
+						insert_rune(key_event)
+					}
+					modified = true
+				}
+			}
+		case termbox.KeySpace:
+			{
+				if mode == 1 {
+					insert_rune(key_event)
+					modified = true
+				}
+			}
 		case termbox.KeyHome:
 			current_col = 0
 		case termbox.KeyEnd:
