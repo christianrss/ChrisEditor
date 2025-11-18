@@ -65,6 +65,29 @@ func insert_rune(event termbox.Event) {
 	current_col++
 }
 
+func delete_rune() {
+	if current_col > 0 {
+		current_col--
+		delete_line := make([]rune, len(text_buffer[current_row])-1)
+		copy(delete_line[:current_col], text_buffer[current_row][:current_col])
+		copy(delete_line[current_col:], text_buffer[current_row][current_col+1:])
+		text_buffer[current_row] = delete_line
+	} else if current_row > 0 {
+		append_line := make([]rune, len(text_buffer[current_row]))
+		copy(append_line, text_buffer[current_row][current_col:])
+		new_text_buffer := make([][]rune, len(text_buffer)-1)
+		copy(new_text_buffer[:current_row], text_buffer[:current_row])
+		copy(new_text_buffer[current_row:], text_buffer[current_row+1:])
+		text_buffer = new_text_buffer
+		current_row--
+		current_col = len(text_buffer[current_row])
+		insert_line := make([]rune, len(text_buffer[current_row])+len(append_line))
+		copy(insert_line[:len(text_buffer[current_row])], text_buffer[current_row])
+		copy(insert_line[len(text_buffer[current_row]):], append_line)
+		text_buffer[current_row] = insert_line
+	}
+}
+
 func insert_line() {
 	right_line := make([]rune, len(text_buffer[current_row][current_col:]))
 	copy(right_line, text_buffer[current_row][current_col:])
@@ -187,6 +210,10 @@ func process_keypress() {
 		}
 	} else {
 		switch key_event.Key {
+		case termbox.KeyBackspace:
+		case termbox.KeyBackspace2:
+			delete_rune()
+			modified = true
 		case termbox.KeyEnter:
 			if mode == 1 {
 				insert_line()
@@ -263,7 +290,7 @@ func run_editor() {
 		text_buffer = append(text_buffer, []rune{})
 	}
 
-	current_row = 26
+	current_row = 0
 
 	for {
 		COLS, ROWS = termbox.Size()
